@@ -1,0 +1,94 @@
+# A pseudorandom random number generator.
+# http://wikipedia.org/wiki/Mersenne_twister
+
+class MersenneTwister {
+  const N int = 624
+  const M int = 397
+
+  var _state List<int> = []
+  var _index int = 0
+
+  def new (seed int) {
+    _state.append(seed & 0xFFFFFFFF)
+    for i in 1..N {
+      _state.append(0xFFFFFFFF & (1812433253 * (_state[i - 1] ^ (_state[i - 1] >>> 30)) + i))
+    }
+    _generateNumbers
+  }
+
+  # Generate an array of untempered numbers.
+  def _generateNumbers {
+    for i in 0..N {
+      var y int = (_state[i] & 0x80000000) | (_state[(i + 1) % N] & 0x7FFFFFFF)
+      _state[i] = _state[(i + M) % N] ^ (y >>> 1)
+      if (y & 1) == 1 {
+        _state[i] = _state[i] ^ 0x9908B0DF
+      }
+     }
+    _index = 0
+  }
+
+  # Generate a pseudorandom integer on the interval [0, 0xffffffff].
+  def random int {
+    if _index >= N { _generateNumbers }
+    var y int = _state[_index]
+    _index++
+
+    y ^= y >>> 11
+    y ^= (y << 7) & 0x9D2C5680
+    y ^= (y << 15) & 0xEFC60000
+    y ^= y >>> 18
+    return y
+  }
+
+  # Generate a pseudorandom integer on the interval [0, 0x7fffffff].
+  def randomPositiveInt int {
+    return random >>> 1
+  }
+
+  # Generate a pseudorandom real number on the interval of [0, 1).
+  # Note: 53 bits of data
+  def randomUniform double {
+    return ((random >>> 5) * 67108864.0 + (random >>> 6)) * (1.0 / 9007199254740992.0)
+  }
+
+  # Generate a pseudorandom real number on the interval of [0, 1].
+  # Note: 32 bits of data
+  def randomUniformClosed double {
+    var d double = random
+    if d < 0 { d += 4294967296.0 }
+    return d * (1.0 / 4294967295.0)
+  }
+
+  # Generate a pseudorandom number on real-interval of (0,1).
+  # Note: 32 bits of data
+  def randomUniformOpen double {
+    return (random + 0.5) * (1.0 / 4294967296.0)
+  }
+
+  # Generate a pseudorandom integer on interval [low, high].
+  def inRange(low int, high int) int {
+    var width int = high - low
+
+    if width <= 0 { return low }
+
+    var pow int = Math.ceil(Math.log(width) / Math.log(2)) as int
+    var gen int
+
+    gen = random & ((1 << pow) - 1)
+    while gen >= width {
+      gen = random & ((1 << pow) - 1)
+    }
+
+    return gen + low
+  }
+
+  def randomBoolean bool {
+    return inRange(0, 1) == 0 ? true : false
+  }
+
+  # Returns a random selected element from the Array provided.
+  def selectOne<T>(list List<T>) T {
+    return list[inRange(0, list.count)]
+  }
+}

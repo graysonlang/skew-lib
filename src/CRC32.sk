@@ -1,0 +1,31 @@
+# Calculates the IEEE 802.3 32-bit CRC (cyclic redundancy check) code.
+# http://wikipedia.org/wiki/Cyclic_redundancy_check
+
+namespace CRC32 {
+  var _table List<int> = _makeTable
+
+  def _makeTable List<int> {
+    var result List<int> = []
+    for i in 0..256 {
+      var c = i
+      for j in 0..8 {
+        c = (c & 1) != 0 ? 0xedb88320 ^ (c >>> 1) : c >>> 1
+      }
+      result.append(c)
+    }
+
+    return result
+  }
+
+  def crc(s string) int {
+    return crc(s.codeUnits)
+  }
+
+  def crc(list List<int>) int {
+    var result int = 0xffffffff
+    for i in 0..list.count {
+      result = _table[(result ^ list[i]) & 0xff] ^ (result >>> 8)
+    }
+    return result ^ 0xffffffff
+  }
+}
